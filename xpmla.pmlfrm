@@ -1,0 +1,414 @@
+import 'GridControl'
+handle any
+endhandle
+
+setup form !!xpmla resize
+using namespace 'Aveva.Pdms.Presentation'
+
+  container .memPurpose PmlNetControl '' anchor l+t+b at x0 y0 width 12 height 18
+  member .gridPurpose is NetGridControl
+
+  container .memSpwl PmlNetControl '' anchor l+t+b at xmax+.2 ymin width 55 height 18
+  member .gridSpwl is NetGridControl
+
+  container .memSpec PmlNetControl '' anchor l+t+b at xmax+.2 ymin width 55 height 18
+  member .gridSpec is NetGridControl
+
+  container .memSpco PmlNetControl '' anchor l+r+t+b at xmax+.2 ymin width 55 height 18
+  member .gridSpco is NetGridControl
+  
+  container .memSelector1 PmlNetControl '' anchor l+b at xmin.memSpwl ymax.memSpwl+.1 width 55 height 18
+  member .gridSelector1 is NetGridControl
+
+  container .memSelector2 PmlNetControl '' anchor l+b at xmax+.2 ymin width 55 height 18
+  member .gridSelector2 is NetGridControl
+
+  container .memSelector3 PmlNetControl '' anchor l+r+b at xmax+.2 ymin width 55 height 18
+  member .gridSelector3 is NetGridControl
+
+  member .allSpwl is array
+  member .aSpwl is array
+  member .aSpec is array
+  member .aSelector1 is array
+  member .aSelector2 is array
+  member .aSelector3 is array
+  member .aSpco is array
+
+  member .selectedSPCO is string
+  member .fmt is format
+
+exit
+--
+define method .xpmla()
+using namespace 'Aveva.Pdms.Presentation'
+  
+  !this.gridPurpose = object NetGridControl()
+  !this.gridPurpose.addeventhandler('AfterSelectChange', !this, 'changePurpose')
+  !this.setupGrid(!this.gridPurpose, !this.memPurpose)
+
+  !this.gridSpwl = object NetGridControl()
+  !this.gridSpwl.addeventhandler('AfterSelectChange', !this, 'changeSpwl')
+  !this.setupGrid(!this.gridSpwl, !this.memSpwl)
+
+  !this.gridSpec = object NetGridControl()
+  !this.gridSpec.addeventhandler('AfterSelectChange', !this, 'changeSpec')
+  !this.setupGrid(!this.gridSpec, !this.memSpec)
+
+  !this.gridSelector1 = object NetGridControl()
+  !this.gridSelector1.addeventhandler('AfterSelectChange', !this, 'changeSelector1')
+  !this.setupGrid(!this.gridSelector1, !this.memSelector1)
+
+  !this.gridSelector2 = object NetGridControl()
+  !this.gridSelector2.addeventhandler('AfterSelectChange', !this, 'changeSelector2')
+  !this.setupGrid(!this.gridSelector2, !this.memSelector2)
+
+  !this.gridSelector3 = object NetGridControl()
+  !this.gridSelector3.addeventhandler('AfterSelectChange', !this, 'changeSelector3')
+  !this.setupGrid(!this.gridSelector3, !this.memSelector3)
+
+  !this.gridSpco = object NetGridControl()
+  !this.gridSpco.addeventhandler('AfterSelectChange', !this, 'changeSpco')
+  !this.setupGrid(!this.gridSpco, !this.memSpco)
+  
+  !this.initcall  = '!this.init()'
+endmethod
+--
+define method .changePurpose(!a is ARRAY)
+using namespace 'Aveva.Pdms.Presentation'
+  !purpose = '-'
+  if !a[0].size() eq 1 then
+    !purpose = !this.gridPurpose.getCell(!a[0][1].real(), 1)
+  endif
+  !this.fillGridSpwl(!purpose)
+endmethod
+--
+define method .changeSpwl(!a is array)
+  !id = 0
+  if !a[0].size() eq 1 then
+    !id = !a[0][1].real()
+  endif
+  !this.fillGridSpec(!id)
+endmethod
+--
+define method .changeSpec(!a is array)
+  !id = 0
+  if !a[0].size() eq 1 then
+    !id = !a[0][1].real()
+  endif
+  !this.fillGridSelector1(!id)
+endmethod
+--
+define method .changeSelector1(!a is array)
+  !id = 0
+  if !a[0].size() eq 1 then
+    !id = !a[0][1].real()
+  endif
+  !this.fillGridSelector2(!id)
+  !this.fillGridSpco(!this.aSelector1, !id)
+endmethod
+--
+define method .changeSelector2(!a is array)
+  !id = 0
+  if !a[0].size() eq 1 then
+    !id = !a[0][1].real()
+  endif
+  !this.fillGridSelector3(!id)
+  !this.fillGridSpco(!this.aSelector2, !id)
+endmethod
+--
+define method .changeSelector3(!a is array)
+  !id = 0
+  if !a[0].size() eq 1 then
+    !id = !a[0][1].real()
+  endif
+  !this.fillGridSpco(!this.aSelector3, !id)
+endmethod
+--
+define method .changeSpco(!a is array)
+  !id = 0
+  if !a[0].size() eq 1 then
+    !id = !a[0][1].real()
+  endif
+  !this.setSelectedSPCO(!id)
+endmethod
+--
+define method .init()
+using namespace 'Aveva.Pdms.Presentation'
+  !this.gridPurpose.BindToDataSource(object NetDataSource('gridPurpose', split('Purpose'), array()))
+  !this.gridSpwl.BindToDataSource(object NetDataSource('gridSpwl', split('Spwl Description'), array()))
+  !this.gridSpec.BindToDataSource(object NetDataSource('gridSpec', split('Spec Description'), array()))
+  !this.gridSelector1.BindToDataSource(object NetDataSource('gridSelector1', split('Selector1'), array()))
+  !this.gridSelector2.BindToDataSource(object NetDataSource('gridSelector2', split('Selector2'), array()))
+  !this.gridSelector3.BindToDataSource(object NetDataSource('gridSelector3', split('Selector3...'), array()))
+  !this.gridSpco.BindToDataSource(object NetDataSource('gridSpco', split('Spcomponent'), array()))
+
+  !this.selectedSPCO = ''
+
+  !this.fillGridSpecPurpose()
+endmethod
+--
+define method .setupGrid(!grid is ANY, !mem is ANY)
+using namespace 'Aveva.Pdms.Presentation'
+
+  !grid.ColumnExcelFilter(F)
+  !grid.setNameColumnImage()
+  !grid.OutlookGroupStyle(F)
+  !grid.FixedHeaders(F)
+  !grid.FixedRows(F)
+  !grid.ColumnSummaries(F)
+  !grid.HeaderSort(F)
+  !grid.SetLabelVisibility(T)
+  !grid.SplitGrid(F)
+  !grid.SingleRowSelection(T)
+  !grid.EditableGrid(F)
+  !grid.BulkEditableGrid(F)
+  
+  !mem.control = !grid.handle()
+endmethod
+--
+define method .fillGridSpecPurpose()
+using namespace 'Aveva.Pdms.Presentation'
+  !spwl = array()
+  !items = array()
+  var !col collect all spwl
+  do !c values !col
+    !ref = !c.dbref()
+    !spwl.append(!ref)
+    !items.append(!ref.purpose)
+  enddo
+
+  !data = array()
+  !row = array()
+  !items = !items.SortUnique()
+  do !r values !items
+    !row[1] = !r
+    !data.append(!row)
+  enddo
+  
+  !this.gridPurpose.BindToDataSource(object NetDataSource('gridPurpose', split('Purpose'), !data))
+
+  !this.allSpwl = !spwl
+endmethod
+--
+define method .fillGridSpwl(!purpose is string)
+using namespace 'Aveva.Pdms.Presentation'
+
+  !spwl = array()
+  !data = array()
+  !row = array()
+  !items = array()
+
+  do !ref values !this.allSpwl
+    if !ref.purpose eq !purpose then 
+      !spwl.append(!ref)
+      !row[1] = !ref.name
+      !row[2] = !ref.descr
+      !items.append(!ref.name)
+      !data.append(!row)
+    endif
+  enddo
+  
+  !indices = !items.SortedIndices()
+  !data.reindex(!indices)
+  !spwl.reindex(!indices)
+  
+  !this.gridSpwl.BindToDataSource(object NetDataSource('gridSpwl', split('Spwl Description'), !data))
+  !this.fillGridSpec(0)
+
+  !this.aSpwl = !spwl
+endmethod
+--
+define method .fillGridSpec(!id is real)
+using namespace 'Aveva.Pdms.Presentation'
+  !spec = array()
+  !data = array()
+  !row = array()
+  !items = array()
+
+  if !id neq 0 then
+    !spwl = !this.aSpwl[!id]
+    do !ref values !spwl.members
+      if !ref.type eq 'SPEC' and !ref.name neq '/*LIMBOSPEC' and !ref.question neq 'LIMB' then 
+        !spec.append(!ref)
+        !row[1] = !ref.name
+        !row[2] = !ref.descr
+        !items.append(!ref.name)
+        !data.append(!row)
+      endif
+    enddo
+  
+    !indices = !items.SortedIndices()
+    !data.reindex(!indices)
+    !spec.reindex(!indices)
+  endif
+
+  !this.gridSpec.BindToDataSource(object NetDataSource('gridSpec', split('Spec Description'), !data))
+  !this.fillGridSelector1(0)
+
+  !this.aSpec = !spec
+endmethod
+--
+define method .fillGridSelector1(!id is real)
+using namespace 'Aveva.Pdms.Presentation'
+
+  !selectors = array()
+  !data = array()
+  !row = array()
+  !items = array()
+
+  if !id neq 0 then
+    !spec = !this.aSpec[!id]
+    do !ref values !spec.members
+      if !ref.type eq 'SELE' then 
+        !selectors.append(!ref)
+        
+        if !ref.tanswer neq '' then
+          !row[1] = !spec.question + ':' + !ref.tanswer + ':' + !ref.descr
+        else
+          !row[1] = !spec.question + ':' + !ref.answer.string(!this.fmt) + ':' + !ref.descr
+        endif
+
+        !items.append(!row[1])
+        !data.append(!row)
+      endif
+    enddo
+    
+    !indices = !items.SortedIndices()
+    !data.reindex(!indices)
+    !selectors.reindex(!indices)
+  endif
+  
+  !this.gridSelector1.BindToDataSource(object NetDataSource('gridSelector1', split('Selector1'), !data))
+  !this.fillGridSelector2(0)
+
+  !this.aSelector1 = !selectors
+endmethod
+--
+define method .fillGridSelector2(!id is real)
+using namespace 'Aveva.Pdms.Presentation'
+
+  !selectors = array()
+  !data = array()
+  !row = array()
+  !items = array()
+
+  if !id neq 0 then
+    !sele = !this.aSelector1[!id]
+    do !ref values !sele.members
+      if !ref.type eq 'SELE' then 
+        !selectors.append(!ref)
+        
+        if !ref.tanswer neq '' then
+          !row[1] = !sele.question + ':' + !ref.tanswer + ':' + !ref.descr
+        else
+          !row[1] = !sele.question + ':' + !ref.answer.string(!this.fmt) + ':' + !ref.descr
+        endif
+
+        !items.append(!row[1])
+        !data.append(!row)
+      endif
+    enddo
+    
+    !indices = !items.SortedIndices()
+    !data.reindex(!indices)
+    !selectors.reindex(!indices)
+  endif
+  
+  !this.gridSelector2.BindToDataSource(object NetDataSource('gridSelector2', split('Selector2'), !data))
+  !this.fillGridSelector3(0)
+
+  !this.aSelector2 = !selectors
+endmethod
+--
+define method .fillGridSelector3(!id is real)
+using namespace 'Aveva.Pdms.Presentation'
+  !selectors = array()
+  !data = array()
+  !row = array()
+  !items = array()
+
+  if !id neq 0 then
+    !sele = !this.aSelector2[!id]
+    !res = !this.getSelectors(!sele, '')
+    do !m values !res
+      !selectors.append(!m[1])
+      !row[1] = !m[2]
+      !items.append(!m[2])
+      !data.append(!row)
+    enddo
+
+    !indices = !items.SortedIndices()
+    !data.reindex(!indices)
+    !selectors.reindex(!indices)
+  endif
+
+  !this.gridSelector3.BindToDataSource(object NetDataSource('gridSelector3', split('Selector3...'), !data))
+  !this.fillGridSpco(!this.aSelector3, 0)
+
+  !this.aSelector3 = !selectors
+endmethod
+--
+define method .getSelectors(!ref is dbref, !prev is string) is array
+  !full = !prev + !ref.question + ':'
+
+  !data = array()
+  do !m values !ref.members
+    if !m.type eq 'SELE' then
+      if !m.tanswer neq '' then
+        !next = !full + !m.tanswer + ':' + !m.descr + ' '
+      else
+        !next = !full + !m.answer.string(!this.fmt) + ':' + !m.descr + ' '
+      endif
+      !part = !this.getSelectors(!m, !next)
+      !data.appendarray(!part)
+    elseif !m.type eq 'SPCO' then
+      if !prev neq '' then
+        !row = array()
+        !row[1] = !ref
+        !row[2] = !prev
+        !data.append(!row)
+      endif
+      break
+    endif
+  enddo
+  return !data
+endmethod
+--
+define method .fillGridSpco(!selectors is array, !id is real)
+using namespace 'Aveva.Pdms.Presentation'
+  !spco = array()
+  !data = array()
+  !row = array()
+  !items = array()
+
+  if !id neq 0 then
+    !sele = !selectors[!id]
+    do !m values !sele.members
+      if !m.type eq 'SPCO' then
+        !spco.append(!m)
+        !row[1] = !m.name
+        !items.append(!m.name)
+        !data.append(!row)
+      endif
+    enddo
+    
+    !indices = !items.SortedIndices()
+    !data.reindex(!indices)
+    !spco.reindex(!indices)
+  endif
+
+  !this.gridSpco.BindToDataSource(object NetDataSource('gridSpco', split('Spcomponent'), !data))
+  !this.setSelectedSPCO(0)
+
+  !this.aSpco = !spco
+endmethod
+--
+define method .setSelectedSPCO(!id is real)
+  if !id eq 0 then
+    !this.selectedSPCO = ''
+    !this.formtitle = ''
+  else
+    !this.selectedSPCO = !this.aSpco[!id].refno.string()
+    !this.formtitle = !this.aSpco[!id].namtyp
+  endif
+endmethod
